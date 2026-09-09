@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a78bfa"/>
+      <stop offset="0.5" stop-color="#7c6cf0"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#c4b5fd" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#818cf8" stop-opacity="0.25"/>
+    </linearGradient>
+  </defs>
+  <!-- Badan batu onyx -->
+  <path d="M32 4 L54 20 L46 56 L18 56 L10 20 Z" fill="url(#g1)"/>
+  <!-- Faset atas -->
+  <path d="M32 4 L44 20 L32 26 L20 20 Z" fill="url(#g2)"/>
+  <!-- Faset samping -->
+  <path d="M10 20 L20 20 L32 26 L24 56 L18 56 Z" fill="#000000" opacity="0.22"/>
+  <path d="M54 20 L44 20 L32 26 L40 56 L46 56 Z" fill="#ffffff" opacity="0.14"/>
+  <!-- Kilau -->
+  <path d="M25 12 L31 10 L22 18 Z" fill="#ffffff" opacity="0.85"/>
+  <circle cx="40" cy="42" r="2.4" fill="#ffffff" opacity="0.5"/>
+  <circle cx="22" cy="38" r="1.6" fill="#ffffff" opacity="0.4"/>
+</svg>

@@ -1,0 +1,24 @@
+{
+  "name": "onyx-ai",
+  "version": "1.0.0",
+  "description": "Onyx AI — Asisten AI chat elegan bertenaga Google Gemini. Chat teks, unggah gambar, generate gambar, markdown, code highlighting, PWA, responsif mobile & desktop.",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "gemini",
+    "chatgpt",
+    "onyx",
+    "assistant",
+    "pwa"
+  ],
+  "license": "MIT"
+}

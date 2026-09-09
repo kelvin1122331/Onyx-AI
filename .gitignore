@@ -1,0 +1,17 @@
+# Dependensi
+node_modules/
+
+# Environment & rahasia
+.env
+.env.*
+!.env.example
+
+# API key lokal (jangan pernah commit!)
+public/js/key.js
+
+# Sistem & editor
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

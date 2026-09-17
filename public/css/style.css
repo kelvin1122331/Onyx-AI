@@ -883,6 +883,14 @@ img { max-width: 100%; }
   color: #fb7185 !important;
   background: rgba(244, 63, 94, 0.12) !important;
 }
+.btn-act-bypass {
+  color: #fbbf24;
+}
+.btn-act-bypass:hover {
+  color: #fde047 !important;
+  background: rgba(251, 191, 36, 0.15) !important;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.35);
+}
 
 /* Indikator berpikir */
 .thinking {

@@ -94,6 +94,14 @@
           <div id="modelMenu" class="model-menu" role="listbox" aria-label="Pilih model"></div>
         </div>
 
+        <button id="btnUncensoredTop" class="uncensored-top-btn" title="Mode Uncensored (Bebas Sensor) — Kirim pesan apa pun tanpa batasan filter" aria-pressed="false">
+          <span class="ut-ico">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          </span>
+          <span class="ut-label">Uncensored</span>
+          <span class="ut-badge">OFF</span>
+        </button>
+
         <div class="topbar-actions">
           <button id="btnNewChatTop" class="icon-btn" title="Obrolan baru (Ctrl+K)" aria-label="Obrolan baru">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -141,10 +149,33 @@
 
       <!-- ================= COMPOSER ================= -->
       <div class="composer-zone">
+        <div id="uncensoredBar" class="uncensored-bar" hidden>
+          <div class="ub-left">
+            <span class="ub-dot"></span>
+            <span class="ub-text"><strong>Mode Uncensored Aktif</strong> — Filter dimatikan, pesan apa pun dijawab tanpa sensor.</span>
+          </div>
+          <div class="ub-actions">
+            <div class="ub-preset-wrap">
+              <button id="btnQuickPreset" class="ub-preset-btn" title="Ganti preset instruksi" aria-haspopup="true">
+                <span id="quickPresetLabel">Lugas &amp; Objektif</span>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div id="quickPresetMenu" class="ub-preset-menu" hidden>
+                <button data-preset="standard" class="selected">Lugas &amp; Objektif</button>
+                <button data-preset="raw">Bebas Restriksi (Raw)</button>
+                <button data-preset="creative">Fiksi &amp; Roleplay</button>
+              </div>
+            </div>
+            <button id="btnCloseUncensoredBar" class="ub-close" title="Matikan Mode Uncensored">Matikan</button>
+          </div>
+        </div>
         <div id="attachRow" class="attach-row" hidden></div>
         <div class="composer" id="composer">
           <button id="btnAttach" class="c-btn" title="Lampirkan gambar / PDF / audio" aria-label="Lampirkan file">
             <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <button id="btnUncensoredComposer" class="c-btn uncensored-c-btn" title="Mode Uncensored: Kirim pesan apa pun tanpa batasan filter" aria-label="Mode Uncensored">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
           </button>
           <textarea id="input" class="input" rows="1" placeholder="Tulis pesan untuk Onyx AI…" autocomplete="off" spellcheck="true"></textarea>
           <button id="btnSend" class="c-send" title="Kirim (Enter)" aria-label="Kirim pesan" disabled>
@@ -187,6 +218,43 @@
           <h3>Kreativitas <span class="hint" id="tempHint">Seimbang (0.80)</span></h3>
           <input type="range" id="tempRange" min="0" max="2" step="0.05" value="0.8" aria-label="Tingkat kreativitas">
           <div class="range-labels"><span>Presisi</span><span>Seimbang</span><span>Kreatif</span></div>
+        </section>
+
+        <section class="set-group">
+          <div class="set-group-split">
+            <div>
+              <h3>Mode Uncensored <span class="hint">tanpa sensor &amp; bebas filter</span></h3>
+              <p class="set-note">Nonaktifkan filter keselamatan AI (BLOCK_NONE) dan gunakan instruksi tanpa sensor agar AI menjawab pesan apa pun secara langsung tanpa penolakan atau sensor moral.</p>
+            </div>
+            <label class="switch" title="Aktifkan atau nonaktifkan mode uncensored">
+              <input type="checkbox" id="uncensoredSwitch">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div id="uncensoredSettingsBody" class="uncensored-settings-body">
+            <label class="field-label">Preset Gaya Uncensored</label>
+            <div class="preset-seg" id="uncensoredPresetSeg" role="radiogroup" aria-label="Preset Uncensored">
+              <button data-preset="standard" type="button" role="radio" class="on">Lugas &amp; Objektif</button>
+              <button data-preset="raw" type="button" role="radio">Bebas Restriksi (Raw)</button>
+              <button data-preset="creative" type="button" role="radio">Fiksi &amp; Roleplay</button>
+            </div>
+
+            <label class="field-label" style="margin-top: 10px;">Instruksi Khusus Mode Uncensored</label>
+            <textarea id="uncensoredPromptInput" rows="4" spellcheck="false" placeholder="Instruksi sistem mode uncensored..."></textarea>
+            <div class="uncensored-settings-foot">
+              <button class="ghost-btn" id="btnResetUncensoredPrompt" type="button">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                Reset ke Preset
+              </button>
+              <div class="u-badges-row">
+                <span class="u-tag">🛡️ Harassment: OFF</span>
+                <span class="u-tag">🚫 Hate: OFF</span>
+                <span class="u-tag">🔞 Explicit: OFF</span>
+                <span class="u-tag">⚠️ Danger: OFF</span>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="set-group">

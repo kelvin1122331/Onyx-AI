@@ -66,6 +66,9 @@
       systemPrompt: CFG.DEFAULT_SYSTEM_PROMPT,
       apiKey: '',
       model: CFG.MODELS[0].id,
+      uncensored: false,
+      uncensoredPreset: 'standard',
+      uncensoredPrompt: '',
     },
     attachments: [],      // lampiran yang menunggu dikirim
     generating: false,
@@ -109,6 +112,19 @@
     dom.lightboxImg = $('#lightboxImg');
     dom.lightboxDl = $('#lightboxDl');
     dom.settingsModal = $('#settingsModal');
+
+    // Elemen Mode Uncensored
+    dom.btnUncensoredTop = $('#btnUncensoredTop');
+    dom.btnUncensoredComposer = $('#btnUncensoredComposer');
+    dom.uncensoredBar = $('#uncensoredBar');
+    dom.btnCloseUncensoredBar = $('#btnCloseUncensoredBar');
+    dom.btnQuickPreset = $('#btnQuickPreset');
+    dom.quickPresetLabel = $('#quickPresetLabel');
+    dom.quickPresetMenu = $('#quickPresetMenu');
+    dom.uncensoredSwitch = $('#uncensoredSwitch');
+    dom.uncensoredPresetSeg = $('#uncensoredPresetSeg');
+    dom.uncensoredPromptInput = $('#uncensoredPromptInput');
+    dom.btnResetUncensoredPrompt = $('#btnResetUncensoredPrompt');
   }
 
   const getModel = (id) => CFG.MODELS.find((m) => m.id === id) || CFG.MODELS[0];
@@ -134,6 +150,7 @@
     audio: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
     x: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
     sparkle: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/></svg>',
+    unlock: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>',
   };
 
   // ==================================================================
@@ -145,6 +162,15 @@
       Object.assign(state.settings, s);
       if (!CFG.MODELS.some((m) => m.id === state.settings.model)) {
         state.settings.model = CFG.MODELS[0].id;
+      }
+      if (typeof state.settings.uncensored !== 'boolean') {
+        state.settings.uncensored = !!CFG.UNCENSORED.ENABLED_BY_DEFAULT;
+      }
+      if (!state.settings.uncensoredPreset || !CFG.UNCENSORED.PRESETS[state.settings.uncensoredPreset]) {
+        state.settings.uncensoredPreset = 'standard';
+      }
+      if (!state.settings.uncensoredPrompt) {
+        state.settings.uncensoredPrompt = CFG.UNCENSORED.PRESETS[state.settings.uncensoredPreset]?.prompt || '';
       }
     } catch { /* abaikan */ }
 
@@ -213,6 +239,91 @@
   mediaDark.addEventListener('change', () => {
     if (state.settings.theme === 'auto') applyTheme();
   });
+
+  // ==================================================================
+  // 5B. MODE UNCENSORED (BEBAS SENSOR)
+  // ==================================================================
+  function syncUncensoredUI() {
+    const on = !!state.settings.uncensored;
+    const curPresetKey = state.settings.uncensoredPreset || 'standard';
+    const curPreset = CFG.UNCENSORED.PRESETS[curPresetKey] || CFG.UNCENSORED.PRESETS.standard;
+
+    // 1. Tombol Topbar
+    if (dom.btnUncensoredTop) {
+      dom.btnUncensoredTop.classList.toggle('active', on);
+      dom.btnUncensoredTop.setAttribute('aria-pressed', on ? 'true' : 'false');
+      const badge = $('.ut-badge', dom.btnUncensoredTop);
+      if (badge) badge.textContent = on ? 'ON' : 'OFF';
+      dom.btnUncensoredTop.title = on
+        ? 'Mode Uncensored AKTIF — Semua pesan diproses bebas sensor (klik untuk mematikan)'
+        : 'Mode Uncensored (Bebas Sensor) — Kirim pesan apa pun tanpa batasan filter';
+    }
+
+    // 2. Tombol Composer
+    if (dom.btnUncensoredComposer) {
+      dom.btnUncensoredComposer.classList.toggle('active', on);
+      dom.btnUncensoredComposer.title = on
+        ? 'Mode Uncensored AKTIF: Pesan apa pun tanpa sensor filter (klik untuk matikan)'
+        : 'Mode Uncensored: Kirim pesan apa pun tanpa batasan filter';
+    }
+
+    // 3. Banner Mode Uncensored di composer
+    if (dom.uncensoredBar) {
+      dom.uncensoredBar.hidden = !on;
+    }
+
+    // 4. Label & Menu Quick Preset
+    if (dom.quickPresetLabel) {
+      dom.quickPresetLabel.textContent = curPreset.name;
+    }
+    if (dom.quickPresetMenu) {
+      $$('button', dom.quickPresetMenu).forEach((b) => {
+        b.classList.toggle('selected', b.dataset.preset === curPresetKey);
+      });
+    }
+
+    // 5. Kontrol Modal Pengaturan
+    if (dom.uncensoredSwitch) {
+      dom.uncensoredSwitch.checked = on;
+    }
+    if (dom.uncensoredPresetSeg) {
+      $$('button', dom.uncensoredPresetSeg).forEach((b) => {
+        const isCur = b.dataset.preset === curPresetKey;
+        b.classList.toggle('on', isCur);
+        b.setAttribute('aria-checked', isCur);
+      });
+    }
+    if (dom.uncensoredPromptInput && document.activeElement !== dom.uncensoredPromptInput) {
+      dom.uncensoredPromptInput.value = state.settings.uncensoredPrompt || curPreset.prompt;
+    }
+  }
+
+  function toggleUncensored(forceState) {
+    if (typeof forceState === 'boolean') {
+      state.settings.uncensored = forceState;
+    } else {
+      state.settings.uncensored = !state.settings.uncensored;
+    }
+    persistSettings();
+    syncUncensoredUI();
+
+    if (state.settings.uncensored) {
+      const curPresetKey = state.settings.uncensoredPreset || 'standard';
+      const presetName = CFG.UNCENSORED.PRESETS[curPresetKey]?.name || 'Lugas & Objektif';
+      toast(`Mode Uncensored AKTIF 🔓 (${presetName}) — Filter dinonaktifkan untuk pesan apa pun`, 'success', 3200);
+    } else {
+      toast('Mode Uncensored NONAKTIF 🔒', 'info', 2000);
+    }
+  }
+
+  function setUncensoredPreset(presetKey) {
+    if (!CFG.UNCENSORED.PRESETS[presetKey]) return;
+    state.settings.uncensoredPreset = presetKey;
+    state.settings.uncensoredPrompt = CFG.UNCENSORED.PRESETS[presetKey].prompt;
+    persistSettings();
+    syncUncensoredUI();
+    toast(`Preset Uncensored: ${CFG.UNCENSORED.PRESETS[presetKey].name}`, 'info', 2000);
+  }
 
   // ==================================================================
   // 6. TOAST & KONFIRMASI
@@ -606,7 +717,11 @@
 
       const meta = document.createElement('div');
       meta.className = 'msg-meta';
-      meta.textContent = fmtClock(m.ts);
+      let userMetaHtml = `<span>${fmtClock(m.ts)}</span>`;
+      if (m.uncensored) {
+        userMetaHtml += ` <span class="badge-uncensored" title="Pesan dikirim dalam Mode Uncensored">${ICONS.unlock} Uncensored</span>`;
+      }
+      meta.innerHTML = userMetaHtml;
       inner.appendChild(meta);
 
       wrap.appendChild(inner);
@@ -650,20 +765,27 @@
     const isLastModel = chat && chat.messages[chat.messages.length - 1]?.id === m.id;
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
-    actions.innerHTML =
-      `<button class="act-btn" data-act="copy" title="Salin">${ICONS.copy}</button>` +
-      (isLastModel && !state.generating
-        ? `<button class="act-btn" data-act="regen" title="Regenerasi">${ICONS.regen}</button>` : '');
+    let acts = `<button class="act-btn" data-act="copy" title="Salin">${ICONS.copy}</button>`;
+    if (isLastModel && !state.generating) {
+      acts += `<button class="act-btn" data-act="regen" title="Regenerasi">${ICONS.regen}</button>`;
+      acts += `<button class="act-btn btn-act-uncen" data-act="regen-uncensored" title="Jawab Ulang dalam Mode Uncensored (Bebas Sensor)">${ICONS.unlock}</button>`;
+    }
+    actions.innerHTML = acts;
     inner.appendChild(actions);
 
-    if (m.meta) {
-      const meta = document.createElement('div');
-      meta.className = 'msg-meta';
-      const parts = [];
-      if (m.meta.ms) parts.push(fmtDur(m.meta.ms));
-      if (m.meta.tokens) parts.push(fmtNum(m.meta.tokens) + ' token');
-      meta.textContent = parts.join(' · ');
-      if (parts.length) inner.appendChild(meta);
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    const parts = [];
+    if (m.meta?.ms) parts.push(fmtDur(m.meta.ms));
+    if (m.meta?.tokens) parts.push(fmtNum(m.meta.tokens) + ' token');
+    const metaParts = [];
+    if (parts.length) metaParts.push(`<span>${parts.join(' · ')}</span>`);
+    if (m.uncensored) {
+      metaParts.push(`<span class="badge-uncensored" title="Respons ini dibuat dalam Mode Uncensored (bebas sensor)">${ICONS.unlock} Uncensored</span>`);
+    }
+    if (metaParts.length) {
+      meta.innerHTML = metaParts.join(' ');
+      inner.appendChild(meta);
     }
 
     wrap.appendChild(inner);
@@ -711,12 +833,35 @@
    * onImage({mimeType,data}) untuk hasil gambar, onMeta untuk usage.
    */
   async function callGeminiStream(modelId, payload, { onDelta, onImage, onMeta, signal }) {
-    const res = await fetch(`${CFG.API_BASE}/models/${modelId}:streamGenerateContent?alt=sse`, {
+    let res = await fetch(`${CFG.API_BASE}/models/${modelId}:streamGenerateContent?alt=sse`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey() },
       body: JSON.stringify(payload),
       signal,
     });
+
+    // Fallback: Jika ada model yang menolak kategori CIVIC_INTEGRITY (error 400),
+    // hapus kategori tersebut dan coba kirim ulang sekali lagi
+    if (!res.ok && res.status === 400 && payload.safetySettings) {
+      try {
+        const clone = res.clone();
+        const j = await clone.json();
+        const msg = (j?.error?.message || '').toLowerCase();
+        if (msg.includes('safety') || msg.includes('category') || msg.includes('civic')) {
+          const strippedPayload = {
+            ...payload,
+            safetySettings: payload.safetySettings.filter((s) => s.category !== 'HARM_CATEGORY_CIVIC_INTEGRITY'),
+          };
+          res = await fetch(`${CFG.API_BASE}/models/${modelId}:streamGenerateContent?alt=sse`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey() },
+            body: JSON.stringify(strippedPayload),
+            signal,
+          });
+        }
+      } catch { /* abaikan */ }
+    }
+
     if (!res.ok) throw await readApiError(res);
 
     const reader = res.body.getReader();
@@ -736,6 +881,10 @@
         let ev;
         try { ev = JSON.parse(line.slice(5).trim()); } catch { continue; }
 
+        if (ev.promptFeedback?.blockReason) {
+          onDelta?.(`\n\n*(Pesan pengguna terblokir oleh filter penyedia (${ev.promptFeedback.blockReason}). Dalam mode Uncensored, coba variasikan sudut pandang menjadi hipotetis atau kreatif.)*`);
+        }
+
         const cand = ev.candidates?.[0];
         for (const p of cand?.content?.parts || []) {
           if (p.thought) continue; // ringkasan berpikir → lewati
@@ -747,7 +896,11 @@
           onDelta?.('\n\n*(Jawaban terpotong karena mencapai batas token maksimum.)*');
         }
         if (cand?.finishReason === 'SAFETY' || cand?.finishReason === 'PROHIBITED_CONTENT') {
-          onDelta?.('\n\n*(Bagian respons diblokir filter keamanan.)*');
+          if (state.settings.uncensored) {
+            onDelta?.('\n\n*(Peringatan: Sebagian konten terpicu batasan internal provider Gemini. Gunakan formulasi metaforis atau fiksi hipotetis untuk melewatinya.)*');
+          } else {
+            onDelta?.('\n\n*(Bagian respons diblokir filter keamanan. Aktifkan Mode Uncensored 🔓 untuk melonggarkan batasan filter.)*');
+          }
         }
       }
     }
@@ -755,11 +908,32 @@
 
   /** Panggil non-streaming (untuk model gambar & judul otomatis). */
   async function callGeminiOnce(modelId, payload) {
-    const res = await fetch(`${CFG.API_BASE}/models/${modelId}:generateContent`, {
+    let res = await fetch(`${CFG.API_BASE}/models/${modelId}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey() },
       body: JSON.stringify(payload),
     });
+
+    // Fallback: Jika ada model yang menolak kategori CIVIC_INTEGRITY (error 400), coba tanpa CIVIC_INTEGRITY
+    if (!res.ok && res.status === 400 && payload.safetySettings) {
+      try {
+        const clone = res.clone();
+        const j = await clone.json();
+        const msg = (j?.error?.message || '').toLowerCase();
+        if (msg.includes('safety') || msg.includes('category') || msg.includes('civic')) {
+          const strippedPayload = {
+            ...payload,
+            safetySettings: payload.safetySettings.filter((s) => s.category !== 'HARM_CATEGORY_CIVIC_INTEGRITY'),
+          };
+          res = await fetch(`${CFG.API_BASE}/models/${modelId}:generateContent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey() },
+            body: JSON.stringify(strippedPayload),
+          });
+        }
+      } catch { /* abaikan */ }
+    }
+
     if (!res.ok) throw await readApiError(res);
     return res.json();
   }
@@ -797,8 +971,22 @@
       contents,
       generationConfig: gen,
     };
-    if (state.settings.systemPrompt?.trim()) {
-      payload.systemInstruction = { parts: [{ text: state.settings.systemPrompt.trim() }] };
+
+    let sysPrompt = (state.settings.systemPrompt || '').trim();
+
+    if (state.settings.uncensored) {
+      // 1. Dapatkan instruksi uncensored
+      const presetKey = state.settings.uncensoredPreset || 'standard';
+      const defaultPresetPrompt = CFG.UNCENSORED.PRESETS[presetKey]?.prompt || CFG.UNCENSORED.PRESETS.standard.prompt;
+      const uncenPrompt = (state.settings.uncensoredPrompt || defaultPresetPrompt).trim();
+      sysPrompt = uncenPrompt + (sysPrompt ? '\n\n' + sysPrompt : '');
+
+      // 2. Set safetySettings ke BLOCK_NONE untuk mematikan filter keamanan
+      payload.safetySettings = [...CFG.UNCENSORED.SAFETY_SETTINGS];
+    }
+
+    if (sysPrompt) {
+      payload.systemInstruction = { parts: [{ text: sysPrompt }] };
     }
     return payload;
   }
@@ -822,8 +1010,28 @@
 
   async function sendMessage() {
     if (state.generating) return;
-    const text = dom.input.value.trim();
+    let text = dom.input.value.trim();
     if (!text && !state.attachments.length) return;
+
+    // Cek shortcut perintah teks /uncensored atau /raw atau /bebas
+    if (/^\/(uncensored|raw|bebas)$/i.test(text)) {
+      toggleUncensored();
+      dom.input.value = '';
+      autosize();
+      updateSendState();
+      return;
+    }
+    let isUncensoredMsg = !!state.settings.uncensored;
+    if (/^\/(uncensored|raw|bebas)\s+/i.test(text)) {
+      text = text.replace(/^\/(uncensored|raw|bebas)\s+/i, '').trim();
+      isUncensoredMsg = true;
+      if (!state.settings.uncensored) {
+        state.settings.uncensored = true;
+        persistSettings();
+        syncUncensoredUI();
+        toast('Mode Uncensored diaktifkan untuk pesan ini! 🔓', 'success', 2400);
+      }
+    }
 
     // Buat / ambil obrolan
     let chat = currentChat();
@@ -834,6 +1042,7 @@
     const now = Date.now();
     const userMsg = {
       id: uid(), role: 'user', text, ts: now,
+      uncensored: isUncensoredMsg,
       attachments: state.attachments.map((a) => ({
         kind: a.kind, name: a.name, mime: a.mime, size: a.size,
         thumb: a.kind === 'image' ? (a._thumb || null) : null,
@@ -857,6 +1066,7 @@
     dom.messages.appendChild(buildMessageEl(userMsg, chat));
     const modelMsg = {
       id: uid(), role: 'model', text: '', ts: Date.now(), meta: null, images: [],
+      uncensored: isUncensoredMsg,
     };
     const placeholder = buildMessageEl(modelMsg, chat);
     const txtEl = $('.msg-text', placeholder);
@@ -1015,6 +1225,7 @@
       ts: Date.now(),
       meta: modelMsg.meta || null,
       images: modelMsg.images.length ? modelMsg.images : undefined,
+      uncensored: !!modelMsg.uncensored,
     };
     chat.messages.push(clean);
     if (clean.images?.length) compressForStorage(clean.images); // hemat localStorage
@@ -1104,7 +1315,7 @@
 
     renderMessages();
 
-    const modelMsg = { id: uid(), role: 'model', text: '', ts: Date.now(), meta: null, images: [] };
+    const modelMsg = { id: uid(), role: 'model', text: '', ts: Date.now(), meta: null, images: [], uncensored: !!state.settings.uncensored };
     const placeholder = buildMessageEl(modelMsg, chat);
     const txtEl = $('.msg-text', placeholder);
     txtEl.innerHTML = '';
@@ -1210,6 +1421,20 @@
     $('#tempHint').textContent = tempLabel(state.settings.temperature);
     $('#sysPrompt').value = state.settings.systemPrompt;
     $('#apiKeyInput').value = state.settings.apiKey || '';
+
+    // Sinkronisasi Mode Uncensored di Pengaturan
+    if (dom.uncensoredSwitch) {
+      dom.uncensoredSwitch.checked = !!state.settings.uncensored;
+    }
+    const curPresetKey = state.settings.uncensoredPreset || 'standard';
+    $$('#uncensoredPresetSeg button').forEach((b) => {
+      const isCur = b.dataset.preset === curPresetKey;
+      b.classList.toggle('on', isCur);
+      b.setAttribute('aria-checked', isCur);
+    });
+    if (dom.uncensoredPromptInput) {
+      dom.uncensoredPromptInput.value = state.settings.uncensoredPrompt || CFG.UNCENSORED.PRESETS[curPresetKey]?.prompt || '';
+    }
   }
   function tempLabel(t) {
     if (t <= 0.35) return `Presisi (${t.toFixed(2).replace('.', ',')})`;
@@ -1254,6 +1479,7 @@
   // 18. SARAN PEMBUKA
   // ==================================================================
   const SUGGESTIONS = [
+    { icon: '🔓', title: 'Mode Uncensored (Bebas Sensor)', sub: 'Tanya topik apa pun tanpa filter atau sensor AI', uncensored: true },
     { icon: '✍️', title: 'Tulis email lamaran kerja', sub: 'yang profesional untuk fresh graduate' },
     { icon: '🧠', title: 'Jelaskan cara kerja AI', sub: 'seperti menjelaskan ke anak SMP' },
     { icon: '🧑‍💻', title: 'Buatkan web to-do list', sub: 'dengan HTML, CSS, dan JavaScript' },
@@ -1271,6 +1497,16 @@
         <span class="sc-body"><span class="sc-title">${MD.escape(s.title)}</span><span class="sc-sub">${MD.escape(s.sub)}</span></span>
         <svg class="sc-go" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>`;
       card.addEventListener('click', () => {
+        if (s.uncensored) {
+          toggleUncensored(true);
+          dom.input.value = '';
+          dom.input.placeholder = 'Tulis pesan apa pun tanpa sensor...';
+          autosize();
+          updateSendState();
+          dom.input.focus();
+          toast('Mode Uncensored aktif! Silakan tulis pertanyaan atau topik apa pun. 🔓', 'success', 3200);
+          return;
+        }
         if (s.model && getModel(s.model)) selectModel(s.model);
         dom.input.value = s.title + (s.fillOnly ? '' : ' — ' + s.sub);
         autosize();
@@ -1341,7 +1577,11 @@
     $('#btnSaveSettings').addEventListener('click', () => {
       state.settings.systemPrompt = $('#sysPrompt').value.trim() || CFG.DEFAULT_SYSTEM_PROMPT;
       state.settings.apiKey = $('#apiKeyInput').value.trim();
+      if (dom.uncensoredPromptInput) {
+        state.settings.uncensoredPrompt = dom.uncensoredPromptInput.value.trim() || (CFG.UNCENSORED.PRESETS[state.settings.uncensoredPreset]?.prompt || '');
+      }
       persistSettings();
+      syncUncensoredUI();
       closeSettings();
       toast('Pengaturan disimpan.', 'success', 1800);
     });
@@ -1360,6 +1600,64 @@
       renderMessages();
       toast('Semua obrolan dihapus.', 'success', 2200);
     });
+
+    // --- mode uncensored ---
+    if (dom.btnUncensoredTop) {
+      dom.btnUncensoredTop.addEventListener('click', () => toggleUncensored());
+    }
+    if (dom.btnUncensoredComposer) {
+      dom.btnUncensoredComposer.addEventListener('click', () => toggleUncensored());
+    }
+    if (dom.btnCloseUncensoredBar) {
+      dom.btnCloseUncensoredBar.addEventListener('click', () => toggleUncensored(false));
+    }
+    if (dom.btnQuickPreset) {
+      dom.btnQuickPreset.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dom.quickPresetMenu.hidden = !dom.quickPresetMenu.hidden;
+      });
+    }
+    if (dom.quickPresetMenu) {
+      dom.quickPresetMenu.addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-preset]');
+        if (!b) return;
+        setUncensoredPreset(b.dataset.preset);
+        dom.quickPresetMenu.hidden = true;
+      });
+    }
+    document.addEventListener('click', (e) => {
+      if (dom.quickPresetMenu && !dom.quickPresetMenu.hidden) {
+        if (!dom.btnQuickPreset?.contains(e.target) && !dom.quickPresetMenu.contains(e.target)) {
+          dom.quickPresetMenu.hidden = true;
+        }
+      }
+    });
+    if (dom.uncensoredSwitch) {
+      dom.uncensoredSwitch.addEventListener('change', (e) => {
+        toggleUncensored(e.target.checked);
+      });
+    }
+    if (dom.uncensoredPresetSeg) {
+      dom.uncensoredPresetSeg.addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-preset]');
+        if (!b) return;
+        setUncensoredPreset(b.dataset.preset);
+      });
+    }
+    if (dom.uncensoredPromptInput) {
+      dom.uncensoredPromptInput.addEventListener('input', () => {
+        state.settings.uncensoredPrompt = dom.uncensoredPromptInput.value;
+      });
+    }
+    if (dom.btnResetUncensoredPrompt) {
+      dom.btnResetUncensoredPrompt.addEventListener('click', () => {
+        const cur = state.settings.uncensoredPreset || 'standard';
+        state.settings.uncensoredPrompt = CFG.UNCENSORED.PRESETS[cur]?.prompt || '';
+        if (dom.uncensoredPromptInput) dom.uncensoredPromptInput.value = state.settings.uncensoredPrompt;
+        persistSettings();
+        toast('Instruksi uncensored dikembalikan ke preset ' + (CFG.UNCENSORED.PRESETS[cur]?.name || ''), 'success', 2000);
+      });
+    }
 
     // --- model picker ---
     dom.modelBtn.addEventListener('click', (e) => {
@@ -1461,6 +1759,14 @@
         await copyText(msg.text || '');
         toast('Disalin ke clipboard.', 'success', 1600);
       } else if (act === 'regen') {
+        regenerate();
+      } else if (act === 'regen-uncensored') {
+        if (!state.settings.uncensored) {
+          state.settings.uncensored = true;
+          persistSettings();
+          syncUncensoredUI();
+        }
+        toast('Menjawab ulang dalam Mode Uncensored 🔓...', 'info', 2200);
         regenerate();
       }
     });
@@ -1582,6 +1888,7 @@
     applyTheme();
     bindEvents();
     renderModelPicker();
+    syncUncensoredUI();
     renderSuggestions();
     renderChatList();
     updateSendState();

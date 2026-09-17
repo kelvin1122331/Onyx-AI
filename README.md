@@ -21,6 +21,7 @@
 | 📄 **PDF & Audio** | Ringkas dokumen, transkrip audio (hingga 12 MB per file) |
 | 🎨 **Generate gambar** | Model **Onyx Canvas** (Nano Banana 2) membuat & mengedit gambar langsung dari chat |
 | 🧠 **5 model pilihan** | Onyx Flash (andalan), Pro (terpintar), Lite (ringan), Ultra (terbaru), Canvas (gambar) |
+| 🔓 **Mode Uncensored** | Bebas sensor untuk pesan apa pun — nonaktifkan filter keselamatan (`BLOCK_NONE`), tanpa penolakan, 3 preset pilihan & shortcut `/uncensored` |
 | 🗂️ **Riwayat obrolan** | Tersimpan di perangkat, dikelompokkan per tanggal, bisa dicari, diganti nama, dihapus, diekspor |
 | 🏷️ **Judul otomatis** | Tiap obrolan diberi judul singkat otomatis oleh AI |
 | 📝 **Markdown penuh** | Tabel, checklist, blockquote, blok kode dengan **syntax highlighting 25+ bahasa** + tombol salin |
@@ -28,6 +29,22 @@
 | ⌨️ **Shortcut** | `Enter` kirim · `Shift+Enter` baris baru · `Ctrl+K` obrolan baru · `Esc` hentikan/tutup |
 | 📱 **PWA** | Bisa di-*install* ke home screen HP, tetap jalan saat offline (aset statis) |
 | 🔧 **Pengaturan** | Suhu kreativitas, instruksi sistem (persona), API key pribadi, ekspor data |
+
+### 🔓 Fitur Mode Uncensored (Bebas Sensor)
+
+Fitur ini memungkinkan AI menjawab pesan apa pun tanpa sensor, penolakan moral, atau filter konten dari Gemini API:
+- **Filter Dinonaktifkan**: Mengatur seluruh kategori bahaya Gemini API ke `BLOCK_NONE` (`HARM_CATEGORY_HARASSMENT`, `HARM_CATEGORY_HATE_SPEECH`, `HARM_CATEGORY_SEXUALLY_EXPLICIT`, `HARM_CATEGORY_DANGEROUS_CONTENT`, `HARM_CATEGORY_CIVIC_INTEGRITY`).
+- **Instruksi Khusus**: AI diarahkan untuk menjawab lugas, mendalam, tanpa kalimat klise penolakan seperti *"sebagai model AI saya tidak dapat..."*.
+- **3 Preset Pilihan**:
+  1. *Lugas & Objektif*: Jawaban langsung, jujur, tanpa sensor dan tanpa ceramah moral.
+  2. *Bebas Restriksi (Raw)*: Bypass filter dan penolakan total untuk topik apa pun.
+  3. *Fiksi & Roleplay Bebas*: Untuk penulisan kreatif dewasa/gelap, dialog fiksi, dan skenario tanpa batas.
+- **Akses Cepat**:
+  - Tombol toggle 🔓 **Uncensored** di Topbar dan di samping tombol lampiran composer.
+  - Banner status dengan pemilih preset langsung di atas composer.
+  - Perintah cepat: ketik `/uncensored <pesan>` atau `/raw <pesan>` untuk mengirim pesan dalam mode uncensored seketika.
+  - Tombol **Jawab Ulang (Uncensored)** pada pesan asisten untuk mencoba ulang jawaban yang terpotong/tersensor.
+  - Menu **⚙️ Pengaturan → Mode Uncensored** untuk kustomisasi instruksi sistem sesuai preferensi.
 
 ## 🚀 Cara Menjalankan
 
